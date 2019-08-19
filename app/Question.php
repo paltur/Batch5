@@ -8,6 +8,7 @@ class Question extends Model
 {
     // Mass Assignment
     protected $fillable= ['title','body'];
+    protected $appends=['create_date','body_html'];
     // One to many(inverse)
     public function user(){
        return $this->belongsTo(User::class);

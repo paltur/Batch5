@@ -17,8 +17,8 @@
                     <hr>
                 <div class="media">
                     <div class="d-flex flex-column votes-control">
-                        <a class="vote-up  
-                           {{Auth::guest() ? 'off' : ''}}" 
+                        <a class="vote-up
+                           {{Auth::guest() ? 'off' : ''}}"
                            onclick="event.preventDefault(); document.getElementById('questions-vote-up{{$question->id}}').submit()"
                            >
                             <i class="fas fa-caret-up fa-3x"></i>
@@ -27,33 +27,33 @@
                             {{$question->votes_count}}
                         </span>
                            <form action="/questions/{{$question->id}}/vote" id="questions-vote-up{{$question->id}}" style="display: none;"  method="post">
-                     
+
                      @csrf
                      <input type="hidden" name="vote" value="1">
                     </form>
-                        <a class="vote-down  
-                           {{Auth::guest() ? 'off' : '' }}" 
+                        <a class="vote-down
+                           {{Auth::guest() ? 'off' : '' }}"
                            onclick="event.preventDefault(); document.getElementById('questions-vote-down{{$question->id}}').submit()" >
                             <i class="fas fa-caret-down fa-3x"></i>
                         </a>
                           <form action="/questions/{{$question->id}}/vote" id="questions-vote-down{{$question->id}}" style="display: none;"  method="post">
-                     
+
                      @csrf
                      <input type="hidden" name="vote" value="-1">
                     </form>
-                        <a  onclick="event.preventDefault(); document.getElementById('questions-favorites-{{$question->id}}').submit()" class="favorite mt-3 
+                        <a  onclick="event.preventDefault(); document.getElementById('questions-favorites-{{$question->id}}').submit()" class="favorite mt-3
      {{Auth::guest() ? 'off':($question->is_favorited) ? 'fabs':''}}">
                             <i class="fas fa-star fa-2x"></i>
                             <span class="faboritted">
                                 {{$question->favorites_count}}
                             </span>
                         </a>
-                        
+
                         <form action="/questions/{{$question->id}}/favorites" id="questions-favorites-{{$question->id}}" style="display: none;"  method="post">
-                     
+
                      @csrf
                      @if($question->is_favorited)
-                        
+
                         @method('DELETE')
                      @endif
                     </form>
@@ -61,20 +61,8 @@
                     <div class="media-body">
                          {!! $question->body_html !!}
                      <div class="float-right">
-                                <span class="text-muted">
-                                Answered {{$question->create_date}}
-                                </span>
-                                <div class="media">
-                                    <a class="pr-2" href="{{$question->user->url}}">
-                        <img src="{{$question->user->avatar}}">         
-                            </a>
-                                    <div class="media-body">
-                     <a href="{{$question->user->url}}">
-                                  {{$question->user->name}}          
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                        <user-info :model="{{$question}}" label="Asked"></user-info>
+                     </div>
                     </div>
                </div>
                 </div>
@@ -82,7 +70,7 @@
     </div>
 </div>
     <!---------------- Answer ------------------>
-    <div class="row mt-5">
+    <div class="row mt-5" v-cloak>
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
@@ -98,7 +86,7 @@
                     <strong>{{ $errors->first('body') }}</strong>
                             </span>
                      @endif
-                     
+
                             </div>
                             <div class="form-group">
                                 <button class="btn btn-outline-secondary" type="submit">Submit</button>
@@ -113,8 +101,8 @@
                     @foreach($question->answers as $answer)
                     <div class="media">
                         <div class="d-flex flex-column votes-control">
-                               <a class="vote-up  
-                           {{Auth::guest() ? 'off' : ''}}" 
+                               <a class="vote-up
+                           {{Auth::guest() ? 'off' : ''}}"
                            onclick="event.preventDefault(); document.getElementById('answers-vote-up{{$answer->id}}').submit()"
                            >
                             <i class="fas fa-caret-up fa-3x"></i>
@@ -123,23 +111,23 @@
                             {{$answer->votes_count}}
                         </span>
                            <form action="/answers/{{$answer->id}}/vote" id="answers-vote-up{{$answer->id}}" style="display: none;"  method="post">
-                     
+
                      @csrf
                      <input type="hidden" name="vote" value="1">
                     </form>
-                        <a class="vote-down  
-                           {{Auth::guest() ? 'off' : '' }}" 
+                        <a class="vote-down
+                           {{Auth::guest() ? 'off' : '' }}"
                            onclick="event.preventDefault(); document.getElementById('answers-vote-down{{$answer->id}}').submit()" >
                             <i class="fas fa-caret-down fa-3x"></i>
                         </a>
                           <form action="/answers/{{$answer->id}}/vote" id="answers-vote-down{{$answer->id}}" style="display: none;"  method="post">
-                     
+
                      @csrf
                      <input type="hidden" name="vote" value="-1">
                     </form>
                         @can('accept', $answer)
                         <a class="favorite mt-3 {{$answer->status}}"
-                           
+
                            onclick="event.preventDefault(); document.getElementById('accept-answer-{{$answer->id}}').submit()">
                             <i class="fas fa-check fa-2x"></i>
                              </a>
@@ -154,47 +142,44 @@
                             @endif
                        @endcan
                     </div>
+                        <answer :answer="{{$answer}}" inline-template>
                         <div class="media-body">
-                            strip_tags({!! $answer->body_html !!})
+
+                            <form v-if="editing" @submit.prevent="update">
+                                <div class="form-group">
+                                    <textarea required class="form-control" rows="10" v-model="body"></textarea>
+                                </div>
+                                <button :disabled="isInvalid" class="btn btn-sm btn-outline-primary">Update</button>
+                                <button @click="cancel">Cancel</button>
+                            </form>
+                            <div v-else>
+                                <div v-html="bodyHtml"></div>
                             <div class="row">
                                 <div class="col-md-4">
                                      <div class="ml-auto">
                                     @can('update', $answer)
-                                    <a class="btn btn-outline-primary btn-sm" href="{{route('questions.answers.edit',[$question->id,$answer->id])}}">
+                                    <a @click.prevent="edit" class="btn btn-outline-primary btn-sm">
+
                                         Edit
                                     </a>
-                             
+
                                     @endcan
                                     @can('delete', $answer)
-                                    <form class="form-delete" action="{{route('questions.answers.destroy',[$question->id,$answer->id])}}" method="post">
-                                        @method('DELETE')
-                                        @csrf
-                                        <button onclick="return confirm('Are You Sure')" class="btn btn-outline-danger btn-sm" type="submit">Delete</button>   
-                                    </form>
+                                        <button @click="destroy" class="btn btn-sm btn-danger">Delete</button>
                                     @endcan
                                 </div>
                                 </div>
                                 <div class="col-md-4"></div>
                                 <div class="col-md-4">
                                     <div class="float-right">
-                                <span class="text-muted">
-                                Answered {{$answer->create_date}}
-                                </span>
-                                <div class="media">
-                                    <a class="pr-2" href="{{$answer->user->url}}">
-                        <img src="{{$answer->user->avatar}}">         
-                            </a>
-                                    <div class="media-body">
-                     <a href="{{$answer->user->url}}">
-                                  {{$answer->user->name}}          
-                                        </a>
-                                    </div>
-                                </div>
+                                        <user-info :model="{{$answer}}" label="Asked"></user-info>
                             </div>
                                 </div>
                             </div>
-                            
+                            </div>
+
                         </div>
+                        </answer>
                     </div>
                     <hr>
                         @endforeach

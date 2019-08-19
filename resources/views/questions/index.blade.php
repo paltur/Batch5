@@ -65,7 +65,7 @@
                                     </small>
                                 </p>
                            
-                            {{str_limit(strip_tags($question->body,250))}}
+                            {{str_limit($question->body,250)}}
                         </div>
                     </div>
                 </div>
